@@ -4,7 +4,7 @@ from numpy import uint32 as u32
 from numpy import uint64 as u64
 
 
-class bmp_header:
+class bmp_file_header:
     signature:  u16
     filesize:   u32
     reserved:   u32
@@ -35,8 +35,10 @@ class bmp_color_table:
 class bmp_pixel_data:
     pixels: None
 
-class bmp_file:
-    header: bmp_header
+
+
+class bmp_file: 
+    file_header: bmp_file_header
     info_header: bmp_info_header
     color_table: bmp_color_table
     pixel_data: bmp_pixel_data
