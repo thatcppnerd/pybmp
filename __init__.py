@@ -2,7 +2,6 @@ from numpy import uint8 as u8
 from numpy import uint16 as u16
 from numpy import uint32 as u32
 from numpy import uint64 as u64
-from numpy import uint128 as u128
 
 
 class bmp_file:
