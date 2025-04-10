@@ -1,4 +1,3 @@
-
 import ctypes as ct
 from ctypes import c_uint8 as u8
 from ctypes import c_uint16 as u16
@@ -7,10 +6,10 @@ from ctypes import c_uint64 as u64
 
 
 class bmp_file_header(ct.Structure):
-    signature:  u16
-    filesize:   u32
-    reserved:   u32
-    offset:     u32
+    signature:  u16 = 0
+    filesize:   u32 = 0
+    reserved:   u32 = 0
+    offset:     u32 = 0
 
     # def __init__(bytes: by)
 
