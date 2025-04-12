@@ -59,6 +59,10 @@ class bmp_color_table(struct):
 class bmp_pixel_data(struct):
     class pixel_1bit(struct):
         data: u8
+        
+        def get_bit(bit: int):
+            return data & (1 << bit)
+
 
     pixels: None 
 
