@@ -4,8 +4,11 @@ from ctypes import c_uint16 as u16
 from ctypes import c_uint32 as u32
 from ctypes import c_uint64 as u64
 
+from ctypes import Structure as struct
+from ctypes import pointer as ptr
 
-class bmp_file_header(ct.Structure):
+
+class bmp_file_header(struct):
     _pack_ = 1
     
     _fields_ = [
@@ -16,7 +19,7 @@ class bmp_file_header(ct.Structure):
     ]
     # def __init__(bytes: by)
 
-class bmp_info_header(ct.Structure):
+class bmp_info_header(struct):
     _pack_ = 1
 
     _fields_ = [
@@ -33,8 +36,8 @@ class bmp_info_header(ct.Structure):
         ("important_colors",    u32)
     ]
 
-class bmp_color_table:
-    class rgb:
+class bmp_color_table(struct):
+    class rgb(struct):
         _pack_ = 1
 
         _fields_ = [
@@ -43,14 +46,25 @@ class bmp_color_table:
             ("blue",        u8),
             ("reserved",    u8)
         ]
-    color: None
+
+    _pack_ = 1
     
-class bmp_pixel_data:
-    pixels: None
+    _fields_ = [
+        ("entry", rgb)
+    ]
+
+    def __init__(self, size: int):
+        self.size = [self.rgb * size]
+    
+class bmp_pixel_data(struct):
+    class pixel_1bit(struct):
+        data: u8
+
+    pixels: None 
 
 
 
-class bmp_file: 
+class bmp_file(struct): 
     _pack_ = 1
 
     _fields_ = [
