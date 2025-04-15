@@ -11,11 +11,11 @@ from ctypes import Union as union
 
 from ctypes import pointer as ptr
 
-from enum import Enum
+from enum import IntEnum
 
 
 
-class BMPVersion(Enum):
+class BMPVersion(IntEnum):
     BITMAPCOREHEADER = 0
     BITMAPINFOHEADER = 1
     BITMAPV2INFOHEADER = 2
@@ -23,6 +23,17 @@ class BMPVersion(Enum):
     BITMAPV4INFOHEADER = 4
     BITMAPV5INFOHEADER = 5
 
+class BMPCompression(IntEnum):
+        BI_RGB = 0
+        BI_RLE8 = 1
+        BI_RLE4 = 2
+        BI_BITFIELDS = 3
+        BI_JPEG = 4
+        BI_PNG = 5
+        BI_ALPHABITFIELDS = 6
+        BI_CMYK = 11
+        BI_CMYKRLE8 = 12
+        BI_CMYKRLE4 = 13
 
 '''
 Translates the size of a .bmp file's info header to its version.
@@ -47,38 +58,24 @@ class BMPFileHeader(struct):
         ("reserved",   u32),
         ("offset",     u32)
     ]
-    # def __init__(bytes: by)
 
 class BMPInfoHeader(struct):
-    class CompressionValue(Enum):
-        BI_RGB = 0
-        BI_RLE8 = 1
-        BI_RLE4 = 2
-        BI_BITFIELDS = 3
-        BI_JPEG = 4
-        BI_PNG = 5
-        BI_ALPHABITFIELDS = 6
-        BI_CMYK = 11
-        BI_CMYKRLE8 = 12
-        BI_CMYKRLE4 = 13
-
-
     _pack_ = 1
 
-    def __init__(self, version: int):
-        v = self.BMPVersion
+    def __init__(self, version: BMPVersion):
+        v = BMPVersion
 
         fields = [
                     ("size", u32),
                 ]
 
-        if version >= v.BITMAPCOREHEADER.value: 
+        if version >= v.BITMAPCOREHEADER:
             fields += ("width",     u16)
             fields += ("height",    u16)
             fields += ("planes",    u16)
             fields += ("bpp",       u16)
 
-        if version >= v.BITMAPINFOHEADER.value:
+        if version >= v.BITMAPINFOHEADER:
             # redefine stuff from version 1
             fields[1] = ("width",   u32)
             fields[2] = ("height",  u32)
@@ -90,32 +87,28 @@ class BMPInfoHeader(struct):
             fields += ("colors_used",       u32)
             fields += ("important_colors",  u32)
 
-        if version >= v.BITMAPV2INFOHEADER.value:
+        if version >= v.BITMAPV2INFOHEADER:
             fields += ("red_mask",      u32)
             fields += ("green_mask",    u32)
             fields += ("blue_mask",     u32)
 
-        if version >= v.BITMAPV3INFOHEADER.value:
+        if version >= v.BITMAPV3INFOHEADER:
             fields += ("alpha_mask",    u32)
 
-        if version >= v.BITMAPV4INFOHEADER.value:
+        if version >= v.BITMAPV4INFOHEADER:
             fields += ("cs_type",       u32)
             fields += ("cs_endpoints",  [u32] * 9)
             fields += ("red_gamma",     u32)
             fields += ("green_gamma",   u32)
             fields += ("blue_gamma",    u32)
 
-        if version == v.BITMAPV5INFOHEADER.value:
+        if version == v.BITMAPV5INFOHEADER:
             fields += ("intent",            u32)
             fields += ("profile_offset",    u32)
             fields += ("profile_size",      u32)
             fields += ("reserved",          u32)
 
-        setattr(
-            self.__class__,
-            "_fields_",
-            fields
-        )
+        self._fields_ = fields
 
 class BMPColorTable(struct):
     class RGB(le_struct):
@@ -271,11 +264,11 @@ class BMPFile:
     To initialize both, firstly fill the info header with the needed parameters, then run `init_CT` 
     FIRST to set up the color table, THEN run `init_PD` to initialize the pixel data. 
     '''
-    def __init__(self, version: int):
-        self.file_header = BMPFileHeader
-        self.info_header = BMPInfoHeader(version)
+    def __init__(self, version: BMPVersion):
+        self.file_header: BMPFileHeader
+        self.info_header: BMPInfoHeader = BMPInfoHeader(version)
         self.color_table: BMPColorTable
-        self.pixel_data = BMPPixelData
+        self.pixel_data: BMPPixelData
 
     '''
     Initializes the color table based on the parameters set in `info_header`.
