@@ -5,10 +5,16 @@ from ctypes import c_uint32 as u32
 from ctypes import c_uint64 as u64
 
 from ctypes import Structure as struct
+from ctypes import LittleEndianStructure as le_struct
+
+from ctypes import Union as union
+
 from ctypes import pointer as ptr
 
+from enum import Enum
 
-class bmp_file_header(struct):
+
+class BMPFileHeader(struct):
     _pack_ = 1
     
     _fields_ = [
@@ -19,7 +25,19 @@ class bmp_file_header(struct):
     ]
     # def __init__(bytes: by)
 
-class bmp_info_header(struct):
+class BMPInfoHeader(struct):
+    class CompressionValue(Enum):
+        BI_RGB = 0
+        BI_RLE8 = 1
+        BI_RLE4 = 2
+        BI_BITFIELDS = 3
+        BI_JPEG = 4
+        BI_PNG = 5
+        BI_ALPHABITFIELDS = 6
+        BI_CMYK = 11
+        BI_CMYKRLE8 = 12
+        BI_CMYKRLE4 = 13
+
     _pack_ = 1
 
     _fields_ = [
@@ -36,8 +54,8 @@ class bmp_info_header(struct):
         ("important_colors",    u32)
     ]
 
-class bmp_color_table(struct):
-    class rgb(struct):
+class BMPColorTable(struct):
+    class RGB(le_struct):
         _pack_ = 1
 
         _fields_ = [
@@ -50,30 +68,137 @@ class bmp_color_table(struct):
     _pack_ = 1
     
     _fields_ = [
-        ("entry", rgb)
+        ("entry", RGB)
     ]
 
     def __init__(self, size: int):
-        self.size = [self.rgb * size]
+        self.size = [self.RGB * size]
     
-class bmp_pixel_data(struct):
-    class pixel_1bit(struct):
-        data: u8
-        
-        def get_bit(bit: int):
-            return data & (1 << bit)
-
-
-    pixels: None 
-
-
-
-class bmp_file(struct): 
+class BMPPixelData(struct):
     _pack_ = 1
 
-    _fields_ = [
-        ("file_header", bmp_file_header),
-        ("info_header", bmp_info_header),
-        ("color_table", bmp_color_table),
-        ("pixel_data",  bmp_pixel_data)
-    ]
+    class Pixel(union):
+        _pack_ = 1
+
+        class RGB555(struct):
+            _pack_ = 1
+            _fields_ = [
+                ("r", u16, 5),
+                ("g", u16, 5),
+                ("b", u16, 5)
+            ]
+
+        class RGB888(struct):
+            _pack_ = 1
+            _fields_ = [
+                ("r", u8),
+                ("g", u8),
+                ("b", u8)
+            ]
+
+        def __init__(self, bitwidth: int):
+            # defs
+            def Pixel_1bit_get(self, bit: int) -> int:
+                    if 0 > bit or bit > 8:
+                        print("get_bit(): `bit` must be between 0 and 7")
+                        exit(1)
+                    else:
+                        return (self.data >> bit) & 1
+
+            def Pixel_4bit_get(self, nibble: int) -> int:
+                if nibble != 0 and nibble != 1 :
+                    print("get_nibble(): `nibble` must be either 0 or 1")
+                    exit(1)
+                else:
+                    return self.data >> (nibble * 4)
+                
+            def Pixel_8bit_get(self) -> int:
+                return self.data
+            
+            def Pixel_16bit_get(self) -> int:
+                return self.data
+            
+            def Pixel_24bit_get(self) -> int:
+                return (self.rgb.b << 16) | (self.rgb.g << 8) | self.rgb.r
+
+
+            # code starts here
+            if bitwidth == 1:
+                setattr
+                (
+                    self.__class__, 
+                    "_fields_", 
+                    [
+                        ("data", u8)
+                    ]
+                )
+                self.data = u8(0)
+                self.get = self.Pixel_1bit_get
+                
+            elif bitwidth == 4:
+                setattr
+                (
+                    self.__class__,
+                    "_fields_",
+                    [
+                        ("data", u8)
+                    ]
+                )
+                self.data = u8(0)
+                self.get = self.Pixel_4bit_get
+
+            elif bitwidth == 8:
+                setattr
+                (
+                    self.__class__,
+                    "_fields_",
+                    [
+                        ("data", u8)
+                    ]
+                )
+                self.data = u8(0)
+                self.get = self.Pixel_8bit_get
+
+            elif bitwidth == 16:
+                setattr
+                (
+                    self.__class__,
+                    "_fields_",
+                    [
+                        ("data", u16),
+                        ("rgb", self.RGB555)
+                    ]
+                )
+                # self.data = 0
+                self.get = self.Pixel_16bit_get
+
+            elif bitwidth == 24:
+                setattr
+                (
+                    self.__class__,
+                    "_fields_",
+                    [
+                        ("rgb", self.RGB888)
+                    ]
+                )
+            else:
+                print("{__name__}: bitwidth is {bitwidth}, valid values are 1, 4, 8, 16, & 24")
+                exit(0)
+
+    
+    def __init__(self, bitwidth: int, num_pixels: int):
+        setattr
+        (
+            self.__class__,
+            "_fields_",
+            [
+                ("pixels", [self.Pixel(bitwidth)] * num_pixels)
+            ]
+        )
+
+
+class BMPFile:
+    file_header: BMPFileHeader
+    info_header: BMPInfoHeader
+    color_table: BMPColorTable
+    pixel_data:  BMPPixelData
