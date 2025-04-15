@@ -38,21 +38,67 @@ class BMPInfoHeader(struct):
         BI_CMYKRLE8 = 12
         BI_CMYKRLE4 = 13
 
+    class VersionValue(Enum):
+        BITMAPCOREHEADER = 0
+        BITMAPINFOHEADER = 1
+        BITMAPV2INFOHEADER = 2
+        BITMAPV3INFOHEADER = 3
+        BITMAPV4INFOHEADER = 4
+        BITMAPV5INFOHEADER = 5
+
     _pack_ = 1
 
-    _fields_ = [
-        ("size",                u32),
-        ("width",               u32),
-        ("height",              u32),
-        ("planes",              u16),
-        ("bits_per_pixel",      u16),
-        ("compression",         u32),
-        ("image_size",          u32),
-        ("hori_res",            u32),
-        ("vert_res",            u32),
-        ("colors_used",         u32),
-        ("important_colors",    u32)
-    ]
+    def __init__(self, version: int):
+        v = self.VersionValue
+
+        fields = [
+                    ("size", u32),
+                ]
+
+        if version >= v.BITMAPCOREHEADER.value: 
+            fields += ("width",     u16)
+            fields += ("height",    u16)
+            fields += ("planes",    u16)
+            fields += ("bpp",       u16)
+
+        if version >= v.BITMAPINFOHEADER.value:
+            # redefine stuff from version 1
+            fields[1] = ("width",   u32)
+            fields[2] = ("height",  u32)
+
+            fields += ("compression",       u32)
+            fields += ("image_size",        u32)
+            fields += ("x_ppm",             u32)
+            fields += ("y_ppm",             u32)
+            fields += ("colors_used",       u32)
+            fields += ("important_colors",  u32)
+
+        if version >= v.BITMAPV2INFOHEADER.value:
+            fields += ("red_mask",      u32)
+            fields += ("green_mask",    u32)
+            fields += ("blue_mask",     u32)
+
+        if version >= v.BITMAPV3INFOHEADER.value:
+            fields += ("alpha_mask",    u32)
+
+        if version >= v.BITMAPV4INFOHEADER.value:
+            fields += ("cs_type",       u32)
+            fields += ("cs_endpoints",  [u32] * 9)
+            fields += ("red_gamma",     u32)
+            fields += ("green_gamma",   u32)
+            fields += ("blue_gamma",    u32)
+
+        if version == v.BITMAPV5INFOHEADER.value:
+            fields += ("intent",            u32)
+            fields += ("profile_offset",    u32)
+            fields += ("profile_size",      u32)
+            fields += ("reserved",          u32)
+
+        setattr(
+            self.__class__,
+            "_fields_",
+            fields
+        )
 
 class BMPColorTable(struct):
     class RGB(le_struct):
@@ -71,8 +117,8 @@ class BMPColorTable(struct):
         ("entry", RGB)
     ]
 
-    def __init__(self, size: int):
-        self.size = [self.RGB * size]
+    def __init__(self, num_entries: int):
+        self.size = [self.RGB * num_entries]
     
 class BMPPixelData(struct):
     _pack_ = 1
@@ -197,8 +243,34 @@ class BMPPixelData(struct):
         )
 
 
+
 class BMPFile:
-    file_header: BMPFileHeader
-    info_header: BMPInfoHeader
-    color_table: BMPColorTable
-    pixel_data:  BMPPixelData
+    '''
+    The constructor can only initialize the file header and the info header.
+    
+    This is because the format of the color table and the pixel data is determined by the parameters
+    set in the info header.
+
+    To initialize both, firstly fill the info header with the needed parameters, then run `init_CT` 
+    FIRST to set up the color table, THEN run `init_PD` to initialize the pixel data. 
+    '''
+    def __init__(self, version: int):
+        self.file_header = BMPFileHeader
+        self.info_header = BMPInfoHeader(version)
+        self.color_table: BMPColorTable
+        self.pixel_data = BMPPixelData
+
+    '''
+    Initializes the color table based on the parameters set in `info_header`.
+    '''
+    def init_CT(self):
+        if self.info_header.compression == BMPInfoHeader.CompressionValue.BI_RGB:
+            self.color_table = BMPColorTable(self.info_header)
+        
+    
+    '''
+    Initializes the pixel data based on the parameters set in `info_header`.
+    '''
+    def init_PD():
+        pass
+
