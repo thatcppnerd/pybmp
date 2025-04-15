@@ -14,6 +14,30 @@ from ctypes import pointer as ptr
 from enum import Enum
 
 
+
+class BMPVersion(Enum):
+    BITMAPCOREHEADER = 0
+    BITMAPINFOHEADER = 1
+    BITMAPV2INFOHEADER = 2
+    BITMAPV3INFOHEADER = 3
+    BITMAPV4INFOHEADER = 4
+    BITMAPV5INFOHEADER = 5
+
+
+'''
+Translates the size of a .bmp file's info header to its version.
+'''
+def BMPGetVersionFromSize(size: int) -> BMPVersion:
+    xlat_vals = (12, 40, 52, 56, 108, 124)
+
+    for i in range(0, 6):
+        if size == xlat_vals[i]:
+            return BMPVersion(i)
+        
+    print("{__name__}: Size does not correlate to any known version.")
+    exit(1)
+
+
 class BMPFileHeader(struct):
     _pack_ = 1
     
@@ -38,18 +62,11 @@ class BMPInfoHeader(struct):
         BI_CMYKRLE8 = 12
         BI_CMYKRLE4 = 13
 
-    class VersionValue(Enum):
-        BITMAPCOREHEADER = 0
-        BITMAPINFOHEADER = 1
-        BITMAPV2INFOHEADER = 2
-        BITMAPV3INFOHEADER = 3
-        BITMAPV4INFOHEADER = 4
-        BITMAPV5INFOHEADER = 5
 
     _pack_ = 1
 
     def __init__(self, version: int):
-        v = self.VersionValue
+        v = self.BMPVersion
 
         fields = [
                     ("size", u32),
