@@ -59,9 +59,8 @@ class BMPFileHeader(struct):
         ("offset",     u32)
     ]
 
-class BMPInfoHeader(struct):
+class __PREDEF_BMPInfoHeader:
     _pack_ = 1
-
     def __init__(self, version: BMPVersion):
         v = BMPVersion
 
@@ -97,7 +96,7 @@ class BMPInfoHeader(struct):
 
         if version >= v.BITMAPV4INFOHEADER:
             fields += ("cs_type",       u32)
-            fields += ("cs_endpoints",  [u32] * 9)
+            fields += ("cs_endpoints",  [u32 * 9])
             fields += ("red_gamma",     u32)
             fields += ("green_gamma",   u32)
             fields += ("blue_gamma",    u32)
@@ -109,6 +108,129 @@ class BMPInfoHeader(struct):
             fields += ("reserved",          u32)
 
         self._fields_ = fields
+
+class BMPInfoHeader(__PREDEF_BMPInfoHeader, struct):
+    pass
+
+
+class BMPInfoHeaderV0(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",    u32),
+        ("width",   u16),
+        ("height",  u16),
+        ("planes",  u16),
+        ("bpp",     u16)
+    ]
+
+class BMPInfoHeaderV1(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",                u32),
+        ("width",               u32),
+        ("height",              u32),
+        ("planes",              u16),
+        ("bpp",                 u16),
+        ("compression",         u32),
+        ("image_size",          u32),
+        ("x_ppm",               u32),
+        ("y_ppm",               u32),
+        ("colors_used",         u32),
+        ("important_colors",    u32)
+    ]
+
+class BMPInfoHeaderV2(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",                u32),
+        ("width",               u32),
+        ("height",              u32),
+        ("planes",              u16),
+        ("bpp",                 u16),
+        ("compression",         u32),
+        ("image_size",          u32),
+        ("x_ppm",               u32),
+        ("y_ppm",               u32),
+        ("colors_used",         u32),
+        ("important_colors",    u32),
+        ("red_mask",            u32),
+        ("green_mask",          u32),
+        ("blue_mask",           u32)
+    ]
+
+class BMPInfoHeaderV3(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",                u32),
+        ("width",               u32),
+        ("height",              u32),
+        ("planes",              u16),
+        ("bpp",                 u16),
+        ("compression",         u32),
+        ("image_size",          u32),
+        ("x_ppm",               u32),
+        ("y_ppm",               u32),
+        ("colors_used",         u32),
+        ("important_colors",    u32),
+        ("red_mask",            u32),
+        ("green_mask",          u32),
+        ("blue_mask",           u32),
+        ("alpha_mask",          u32)
+    ]
+
+class BMPInfoHeaderV4(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",                u32),
+        ("width",               u32),
+        ("height",              u32),
+        ("planes",              u16),
+        ("bpp",                 u16),
+        ("compression",         u32),
+        ("image_size",          u32),
+        ("x_ppm",               u32),
+        ("y_ppm",               u32),
+        ("colors_used",         u32),
+        ("important_colors",    u32),
+        ("red_mask",            u32),
+        ("green_mask",          u32),
+        ("blue_mask",           u32),
+        ("alpha_mask",          u32),
+        ("cs_type",             u32),
+        ("cs_endpoints",        [u32 * 9]),
+        ("red_gamma",           u32),
+        ("green_gamma",         u32),
+        ("blue_gamma",          u32)
+    ]
+
+class BMPInfoHeaderV5(struct):
+    _pack_ = 1
+    _fields_ = [
+        ("size",                u32),
+        ("width",               u32),
+        ("height",              u32),
+        ("planes",              u16),
+        ("bpp",                 u16),
+        ("compression",         u32),
+        ("image_size",          u32),
+        ("x_ppm",               u32),
+        ("y_ppm",               u32),
+        ("colors_used",         u32),
+        ("important_colors",    u32),
+        ("red_mask",            u32),
+        ("green_mask",          u32),
+        ("blue_mask",           u32),
+        ("alpha_mask",          u32),
+        ("cs_type",             u32),
+        ("cs_endpoints",        [u32] * 9),
+        ("red_gamma",           u32),
+        ("green_gamma",         u32),
+        ("blue_gamma",          u32),
+        ("intent",              u32),
+        ("profile_offset",      u32),
+        ("profile_size",        u32),
+        ("reserved",            u32)
+    ]
 
 class BMPColorTable(struct):
     class RGB(le_struct):
@@ -265,7 +387,7 @@ class BMPFile:
     FIRST to set up the color table, THEN run `init_PD` to initialize the pixel data. 
     '''
     def __init__(self, version: BMPVersion):
-        self.file_header: BMPFileHeader
+        self.file_header: BMPFileHeader = BMPFileHeader(0)
         self.info_header: BMPInfoHeader = BMPInfoHeader(version)
         self.color_table: BMPColorTable
         self.pixel_data: BMPPixelData
